@@ -1,1 +1,3 @@
-# 4SI3_PYTHONPROJECT
+# PCAP IP'S parser made by Dylan, Antoine & Antonin
+
+# TODO : Graphics
