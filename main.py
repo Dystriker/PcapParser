@@ -1,60 +1,78 @@
 import sys
 import re
+import os.path
 import os
 from pcapfile import savefile
 import xlwt
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from PIL import Image
 
+def graphFiltered(data, ipToSearch):
 
-def graphFilteredSrc(data, ipToSearch):
-    tab = {}
+    # SRC PART
+    tabSrc = {}
     for result in data:
         if result[0] == ipToSearch:
-            tab[result[1]] = result[2]
+            tabSrc[result[1]] = result[2]
 
-    if any(tab):
-        ips = []
-        number = []
-        for key, value in tab.items():
-            ips.append(key)
-            number.append(value)
-        
-
-        fig, ax = plt.subplots()
-        ax.bar(ips, number, color = 'pink')
-        ax.set_ylabel('Occurences')
-        ax.set_title('IP as Source')
-        plt.show()
+    if any(tabSrc):
+        ipsSrc = []
+        numberSrc = []
+        for key, value in tabSrc.items():
+            ipsSrc.append(key)
+            numberSrc.append(value)
     else:
-        print("Aucune donnée en IP Source")
-    
+        print("Aucune donnée en IP Source")   
 
-def graphFilteredDst(data, ipToSearch):
-    tab = {}
+    # DST PART
+    tabDst = {}
     for result in data:
         if result[1] == ipToSearch:
-            tab[result[0]] = result[2]
+            tabDst[result[0]] = result[2]
     
-    if any(tab):
-        ips = []
-        number = []
-        for key, value in tab.items():
-            ips.append(key)
-            number.append(value)
-        
+    if any(tabDst):
+        ipsDst = []
+        numberDst = []
+        for key, value in tabDst.items():
+            ipsDst.append(key)
+            numberDst.append(value)
 
-
-        fig, ax = plt.subplots()
-        ax.bar(ips, number, color = 'red')
-        ax.set_ylabel('Occurences')
-        ax.set_title('IP as Destination')
-        plt.show()
     else:
         print("Aucune donnée en IP Destination")
-    
 
+    ### DISPLAY 
+    if any(tabSrc) and any(tabDst):
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        fig.tight_layout(pad=3.0)
+
+        ax1.bar(ipsSrc, numberSrc, color = 'pink')
+        ax1.set_ylabel('Occurences')
+        ax1.set_title('IP as Source')
+
+        ax2.bar(ipsDst, numberDst, color = 'red')
+        ax2.set_ylabel('Occurences')
+        ax2.set_title('IP as Destination')
+
+    elif len(tabSrc) > 0 and len(tabDst) <= 0:
+        fig, ax1 = plt.subplots()
+
+        ax1.bar(ipsSrc, numberSrc, color = 'pink')
+        ax1.set_ylabel('Occurences')
+        ax1.set_title('IP as Source')
+
+    elif len(tabDst) > 0 and len(tabSrc) <= 0:
+        fig, ax2 = plt.subplots()
+
+        ax2.bar(ipsDst, numberDst, color = 'red')
+        ax2.set_ylabel('Occurences')
+        ax2.set_title('IP as Destination')
+
+    plt.savefig('filteredGraphs.png', dpi=200)
+   
+    plt.show()
+    
 
 def countSrc(data):
     numberSrc = 0
@@ -99,19 +117,14 @@ def generate_graph(data):
         tmpTableau.append(data[i][1])
         nouveauTableau.append(tmpTableau)
 
-    graphSrc(nouveauTableau)
-    graphDst(nouveauTableau)
-
+    basicGraphs(nouveauTableau)
     filterGraph = str(input("Voulez-vous un graphique ciblé sur une IP ? (o/N) "))
     if filterGraph.lower() == "o":
         ipFilter = str(input("Quelle est l'IP que vous voulez filtrer ? "))
-        graphFilteredSrc(nouveauTableau, ipFilter)
-        graphFilteredDst(nouveauTableau, ipFilter)
-    else:
-        print("Merci d'avoir utilisé notre PcapParser")
-        sys.exit(0)
+        graphFiltered(nouveauTableau, ipFilter)
 
-def graphSrc(data):
+def basicGraphs(data):
+    # IP SRC PART
     labelsSrc = []
     occSrc = []
     tabCountSrc = countSrc(data)
@@ -119,14 +132,7 @@ def graphSrc(data):
         labelsSrc.append(key)
         occSrc.append(value)
 
-    fig1, ax1 = plt.subplots()
-    ax1.pie(occSrc,autopct=autopct_format(occSrc), shadow=True, startangle=90)
-    ax1.legend(labelsSrc, title="IP SOURCE")
-    ax1.axis('equal')
-    ax1.set_title("IP'S AS SOURCE")
-    plt.show()
-
-def graphDst(data):
+    # IP DST PART
     labelsDst = []
     occDst = []
     tabCountDst = countDst(data)
@@ -134,15 +140,23 @@ def graphDst(data):
         labelsDst.append(key)
         occDst.append(value)
 
-    fig1, ax1 = plt.subplots()
-    ax1.pie(occDst, autopct=autopct_format(occDst), shadow=True, startangle=90)
-    ax1.legend(labelsDst, title="IP DESTINATION")
+    # GENERATE CHARTS
+    fig, (ax1, ax2) = plt.subplots(2)
+
+    fig.tight_layout(pad=3.0)
+
+    ax1.pie(occSrc,autopct=autopct_format(occSrc), shadow=True, startangle=90)
+    ax1.legend(labelsSrc, title="IP SOURCE")
     ax1.axis('equal')
-    ax1.set_title("IP'S AS DESTINATION")
+    ax1.set_title("IP'S AS SOURCE")
+
+    ax2.pie(occDst, autopct=autopct_format(occDst), shadow=True, startangle=90)
+    ax2.legend(labelsDst, title="IP DESTINATION")
+    ax2.axis('equal')
+    ax2.set_title("IP'S AS DESTINATION")
+
+    plt.savefig('basicGraphs.png', dpi=200)
     plt.show()
-
-
-
 
 
 def validate_ip(ip_str):
@@ -193,19 +207,19 @@ def extract_pcap(pcapfile, user_ip_src, user_ip_dest):
         for i in results:
             print(str(i[0]) + ' -> ' + str(i[1]) + ' fois')
         
-        toExport = str(input("Voulez-vous exporter en CSV ? (o/N) "))
-        if toExport.lower() == 'o':
-            export_as_csv(clean_results)
-            toGraphics = str(input("Voulez-vous générer des graphiques ? (o/N) "))
-            if toGraphics.lower() == 'o':
-                generate_graph(clean_results)
+        toGraphics = str(input("Voulez-vous générer des graphiques ? (o/N) "))
+        if toGraphics.lower() == 'o':
+            generate_graph(clean_results)
+            toExport = str(input("Voulez-vous exporter en CSV ? (o/N) "))
+            if toExport.lower() == 'o':
+                export_as_csv(clean_results)
             else:
                 print("Merci d'avoir utilisé notre PcapParser !")
                 sys.exit(0)
         else:
-            toGraphics = str(input("Voulez-vous générer des graphiques ? (o/N) "))
-            if toGraphics.lower() == 'o':
-                generate_graph(clean_results)
+            toExport = str(input("Voulez-vous exporter en CSV ? (o/N) "))
+            if toExport.lower() == 'o':
+                export_as_csv(clean_results)
             else:
                 print("Merci d'avoir utilisé notre PcapParser !")
                 sys.exit(0)
@@ -216,10 +230,30 @@ def export_as_csv(results):
     saveFileXLS = os.getcwd() + '/pcap_results.xls'
     headings_font = xlwt.easyxf('font: color-index blue, bold on; align: horiz centre;')
     normal_font = xlwt.easyxf('font: bold off; align: horiz centre')
+
     sheet0 = wbk.add_sheet('IPs extraites', cell_overwrite_ok=True)
     sheet0.write(0, 0, 'IP Source', headings_font)
     sheet0.write(0, 1, 'IP Destination', headings_font)
     sheet0.write(0, 2, 'Occurences', headings_font)
+    
+    ##############
+    
+    if os.path.exists("basicGraphs.png"):
+        sheet1 = wbk.add_sheet('BasicGraphs', cell_overwrite_ok=True)
+        imgBasicGraph = Image.open("basicGraphs.png")
+        r, g, b, a = imgBasicGraph.split()
+        imgBasicGraph = Image.merge("RGB", (r, g, b))
+        imgBasicGraph.save('BasicGraphs.bmp')
+        sheet1.insert_bitmap('BasicGraphs.bmp', 1, 1)
+
+    if os.path.exists("filteredGraphs.png"):
+        sheet2 = wbk.add_sheet('FilteredGraphs', cell_overwrite_ok=True)
+        imgFilteredGraph = Image.open("filteredGraphs.png")
+        r, g, b, a = imgFilteredGraph.split()
+        imgFilteredGraph = Image.merge("RGB", (r, g, b))
+        imgFilteredGraph.save('filteredGraphs.bmp')
+        sheet2.insert_bitmap('filteredGraphs.bmp', 2, 1)
+    
 
     for i in range(len(results)):
         ips = results[i][0].split()
