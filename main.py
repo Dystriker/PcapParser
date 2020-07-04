@@ -4,10 +4,145 @@ import os
 from pcapfile import savefile
 import xlwt
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
-def createBarPlot(data):
-    print('ok')
+
+def graphFilteredSrc(data, ipToSearch):
+    tab = {}
+    for result in data:
+        if result[0] == ipToSearch:
+            tab[result[1]] = result[2]
+
+    if any(tab):
+        ips = []
+        number = []
+        for key, value in tab.items():
+            ips.append(key)
+            number.append(value)
+        
+
+        fig, ax = plt.subplots()
+        ax.bar(ips, number, color = 'pink')
+        ax.set_ylabel('Occurences')
+        ax.set_title('IP as Source')
+        plt.show()
+    else:
+        print("Aucune donnée en IP Source")
+    
+
+def graphFilteredDst(data, ipToSearch):
+    tab = {}
+    for result in data:
+        if result[1] == ipToSearch:
+            tab[result[0]] = result[2]
+    
+    if any(tab):
+        ips = []
+        number = []
+        for key, value in tab.items():
+            ips.append(key)
+            number.append(value)
+        
+
+
+        fig, ax = plt.subplots()
+        ax.bar(ips, number, color = 'red')
+        ax.set_ylabel('Occurences')
+        ax.set_title('IP as Destination')
+        plt.show()
+    else:
+        print("Aucune donnée en IP Destination")
+    
+
+
+def countSrc(data):
+    numberSrc = 0
+    tab = {}
+    for x in data:
+        ipSrc = x[0]
+        occurences = x[2]
+        if ipSrc in tab:
+            oldValue = tab[ipSrc]
+            tab[ipSrc] = oldValue + occurences
+        else:
+            tab[ipSrc] = occurences
+    
+    return(tab)
+
+def countDst(data):
+    numberDst = 0
+    tab = {}
+    for x in data:
+        ipDst = x[1]
+        occurences = x[2]
+        if ipDst in tab:
+            oldValue = tab[ipDst]
+            tab[ipDst] = oldValue + occurences
+        else:
+            tab[ipDst] = occurences
+    
+    return(tab)
+
+def autopct_format(values):
+    def my_format(pct):
+        total = sum(values)
+        val = int(round(pct*total/100.0))
+        return '{v:d}'.format(v=val)
+    return my_format
+
+def generate_graph(data):
+    nouveauTableau = []
+    for i in range(len(data)):
+        tmpTableau = []
+        tmpTableau += data[i][0].split('  ')
+        tmpTableau.append(data[i][1])
+        nouveauTableau.append(tmpTableau)
+
+    graphSrc(nouveauTableau)
+    graphDst(nouveauTableau)
+
+    filterGraph = str(input("Voulez-vous un graphique ciblé sur une IP ? (o/N) "))
+    if filterGraph.lower() == "o":
+        ipFilter = str(input("Quelle est l'IP que vous voulez filtrer ? "))
+        graphFilteredSrc(nouveauTableau, ipFilter)
+        graphFilteredDst(nouveauTableau, ipFilter)
+    else:
+        print("Merci d'avoir utilisé notre PcapParser")
+        sys.exit(0)
+
+def graphSrc(data):
+    labelsSrc = []
+    occSrc = []
+    tabCountSrc = countSrc(data)
+    for key, value in tabCountSrc.items():
+        labelsSrc.append(key)
+        occSrc.append(value)
+
+    fig1, ax1 = plt.subplots()
+    ax1.pie(occSrc,autopct=autopct_format(occSrc), shadow=True, startangle=90)
+    ax1.legend(labelsSrc, title="IP SOURCE")
+    ax1.axis('equal')
+    ax1.set_title("IP'S AS SOURCE")
+    plt.show()
+
+def graphDst(data):
+    labelsDst = []
+    occDst = []
+    tabCountDst = countDst(data)
+    for key, value in tabCountDst.items():
+        labelsDst.append(key)
+        occDst.append(value)
+
+    fig1, ax1 = plt.subplots()
+    ax1.pie(occDst, autopct=autopct_format(occDst), shadow=True, startangle=90)
+    ax1.legend(labelsDst, title="IP DESTINATION")
+    ax1.axis('equal')
+    ax1.set_title("IP'S AS DESTINATION")
+    plt.show()
+
+
+
 
 
 def validate_ip(ip_str):
@@ -61,8 +196,19 @@ def extract_pcap(pcapfile, user_ip_src, user_ip_dest):
         toExport = str(input("Voulez-vous exporter en CSV ? (o/N) "))
         if toExport.lower() == 'o':
             export_as_csv(clean_results)
+            toGraphics = str(input("Voulez-vous générer des graphiques ? (o/N) "))
+            if toGraphics.lower() == 'o':
+                generate_graph(clean_results)
+            else:
+                print("Merci d'avoir utilisé notre PcapParser !")
+                sys.exit(0)
         else:
-            sys.exit(0)
+            toGraphics = str(input("Voulez-vous générer des graphiques ? (o/N) "))
+            if toGraphics.lower() == 'o':
+                generate_graph(clean_results)
+            else:
+                print("Merci d'avoir utilisé notre PcapParser !")
+                sys.exit(0)
 
 def export_as_csv(results):
 
