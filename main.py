@@ -4,6 +4,7 @@ import os.path
 from pcapfile import savefile
 import xlwt
 import matplotlib.pyplot as plt
+from datetime import datetime
 from PIL import Image
 
 def graphFiltered(data, ipToSearch):
@@ -264,8 +265,24 @@ def getFileName():
         print("Le fichier n'existe pas !")
         sys.exit(0)
 
+def saveAndMove():
+    dateChaine = ""
+    today = datetime.now()
+    dateChaine += str(today.day) + "_" + str(today.month) + "_" + str(today.year) + "-" + str(today.hour) + ":" + str(today.minute) + ":" + str(today.second)
+    os.mkdir("save_" + dateChaine)
+
+    files = os.listdir(".")
+    
+    for f in files:
+        if(".bmp" in f or ".png" in f or ".xls" in f):
+            os.replace(f, "save_" + dateChaine + "/"+ f) 
+ 
+    
+
 def main():
     getFileName()
+    saveAndMove()
+
 
 if __name__ == '__main__':
     main()
