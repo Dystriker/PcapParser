@@ -1,3 +1,1 @@
-# PCAP IP'S parser made by Dylan, Antoine & Antonin
-
-# 
+# PCAP IP'S PARSER # 
